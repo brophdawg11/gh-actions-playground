@@ -1,0 +1,54 @@
+name: Test Multi-Use Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        required: true
+  schedule:
+    - cron: "* * * * *" # every minute
+  push:
+    branches:
+      - main
+
+jobs:
+  print:
+    name: Print event
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github.event) }}
+        run: echo "$GITHUB_CONTEXT"
+
+  dispatch:
+    name: Workflow Dispatch
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log
+        run: |
+          echo "Workflow Dispatch"
+          echo "Event: ${{ github.event_name }}"
+          echo "Branch: ${{ github.event.inputs.branch }}"
+
+  cron:
+    name: Cron
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log
+        run: |
+          echo "Cron"
+          echo "Event: ${{ github.event_name }}"
+
+  push:
+    name: Push
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log
+        run: |
+          echo "Push"
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.event.push.ref }}"
