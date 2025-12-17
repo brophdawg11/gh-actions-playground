@@ -1,0 +1,18 @@
+name: Tag Trigger
+
+on:
+  push:
+    tags:
+      - "test-*"
+
+jobs:
+  echo:
+    name: Print
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github.event) }}
+        run: |
+          echo "main branch tag triggered workflow"
+          echo "$GITHUB_CONTEXT"
