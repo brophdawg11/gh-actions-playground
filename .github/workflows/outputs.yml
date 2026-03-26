@@ -1,0 +1,27 @@
+on:
+  workflow_dispatch:
+
+jobs:
+  get_tag:
+    runs-on: ubuntu-latest
+    # outputs:
+    #   tag: ${{ steps.get_tag.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        # with:
+        #   fetch-tags: true
+
+      - name: Output tag
+        id: get_tag
+        run: |
+          echo "tags \n$(git tag --points-at HEAD)"
+          echo "tag $(git tag --points-at HEAD | grep -e '^temp@3')"
+          echo "tag=$(git tag --points-at HEAD | grep -e '^temp@3')" >> $GITHUB_OUTPUT
+
+  job2:
+    needs: get_tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Output tag
+        run: echo "got tag ${{ needs.get_tag.outputs.tag }}"
