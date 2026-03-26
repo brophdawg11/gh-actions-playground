@@ -4,8 +4,8 @@ on:
 jobs:
   get_tag:
     runs-on: ubuntu-latest
-    # outputs:
-    #   tag: ${{ steps.get_tag.outputs.tag }}
+    outputs:
+      tag: ${{ steps.get_tag.outputs.tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
