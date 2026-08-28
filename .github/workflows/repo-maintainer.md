@@ -14,7 +14,12 @@ permissions:
 concurrency:
   group: repo-maintainer-${{ github.event.issue.number }}
   cancel-in-progress: false
-engine: codex
+model: gpt-5.6-terra
+engine:
+  id: codex
+  env:
+    OPENAI_BASE_URL: https://proxy.shopify.ai/v1
+    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 strict: true
 tools:
   bash: true
