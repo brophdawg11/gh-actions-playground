@@ -38,6 +38,23 @@ describe("Router", () => {
     view.cleanup();
   });
 
+  it("uses the first matching route before a wildcard fallback", () => {
+    window.history.replaceState(null, "", "/about");
+
+    let view = render(
+      <Router
+        routes={{
+          "/": Home,
+          "/about": About,
+          "/*": NotFound,
+        }}
+      />,
+    );
+
+    expect(view.container.textContent).toBe("About");
+    view.cleanup();
+  });
+
   it("updates the rendered component for intercepted navigations", async () => {
     let view = render(
       <Router
@@ -59,3 +76,4 @@ describe("Router", () => {
 let Home: RouteComponent = () => () => <h1>Home</h1>;
 let About: RouteComponent = () => () => <h1>About</h1>;
 let Project: RouteComponent = () => () => <h1>Project</h1>;
+let NotFound: RouteComponent = () => () => <h1>Not found</h1>;
