@@ -5,7 +5,15 @@ on:
   roles: all
   issues:
     types: [opened, reopened]
+  issue_comment:
+    types: [created]
   skip-bots: [dependabot, renovate, github-actions, copilot]
+if: >-
+  github.event_name == 'issues' ||
+  (github.event_name == 'issue_comment' &&
+  github.actor == 'brophdawg11' &&
+  github.event.comment.body == '/repo-maintainer' &&
+  !github.event.issue.pull_request)
 permissions:
   actions: read
   contents: read
@@ -32,6 +40,13 @@ tools:
 network:
   allowed: [defaults, github, node, playwright, local]
 steps:
+  - name: Set up pnpm
+    uses: pnpm/action-setup@v4
+    with:
+      dest: ${{ runner.tool_cache }}/pnpm
+      run_install: false
+  - name: Verify pnpm
+    run: pnpm --version
   - name: Prefetch issue and repository context
     uses: actions/github-script@v9
     with:
@@ -204,7 +219,7 @@ timeout-minutes: 30
 
 # Repository Maintainer
 
-Triage the newly opened issue in this GitHub Actions playground, investigate it, and make at most one small, high-confidence improvement.
+Triage the triggering issue in this GitHub Actions playground, investigate it, and make at most one small, high-confidence improvement.
 
 ## Start with bounded context
 
