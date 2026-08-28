@@ -5,8 +5,6 @@ on:
     inputs:
       branch:
         required: true
-  schedule:
-    - cron: "0,15,30,45 * * * *" # every 15 minutes
   push:
     branches:
       - main
