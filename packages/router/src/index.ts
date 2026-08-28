@@ -65,7 +65,7 @@ export function Router(handle: Handle<RouterProps>) {
       );
     }
 
-    let match = compiledRoutes.find(({ pattern }) => pattern.test(currentUrl));
+    let match = compiledRoutes.findLast(({ pattern }) => pattern.test(currentUrl));
     return match ? createElement(match.component) : null;
   };
 }
