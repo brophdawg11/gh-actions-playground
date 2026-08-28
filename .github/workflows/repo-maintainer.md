@@ -4,7 +4,7 @@ description: Triage and fix issues in the GitHub Actions playground
 on:
   roles: all
   issues:
-    types: [opened]
+    types: [opened, reopened]
   skip-bots: [dependabot, renovate, github-actions, copilot]
 permissions:
   actions: read
