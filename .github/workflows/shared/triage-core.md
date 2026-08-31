@@ -1,64 +1,5 @@
 ---
-name: triage
-description: Triage new issues and admin-requested re-triage without changing code
-on:
-  roles: all
-  issues:
-    types: [opened]
-  issue_comment:
-    types: [created]
-  skip-bots: [dependabot, renovate, github-actions, copilot]
-  permissions:
-    contents: read
-  steps:
-    - name: Authorize triage request
-      id: authorize
-      uses: actions/github-script@v9
-      with:
-        script: |
-          if (context.eventName === "issues") {
-            core.setOutput("authorized", "true");
-            return;
-          }
-
-          const issue = context.payload.issue;
-          const comment = context.payload.comment;
-          if (
-            !issue ||
-            issue.pull_request ||
-            !comment ||
-            comment.body !== "/triage"
-          ) {
-            core.setOutput("authorized", "false");
-            return;
-          }
-
-          const { data } =
-            await github.rest.repos.getCollaboratorPermissionLevel({
-              ...context.repo,
-              username: context.actor,
-            });
-          core.setOutput(
-            "authorized",
-            data.permission === "admin" ? "true" : "false",
-          );
-if: needs.pre_activation.outputs.authorized == 'true'
-jobs:
-  pre-activation:
-    outputs:
-      authorized: ${{ steps.authorize.outputs.authorized }}
-permissions:
-  contents: read
-  issues: read
-  pull-requests: read
-checkout: false
-model: gpt-5.6-terra
-engine:
-  id: codex
-  env:
-    OPENAI_BASE_URL: https://proxy.shopify.ai/v1
-    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-strict: true
+description: Shared issue-triage agent configuration and instructions
 tools:
   bash: false
   cli-proxy: false
@@ -98,13 +39,6 @@ safe-outputs:
     target: triggering
   threat-detection:
     continue-on-error: false
-user-rate-limit:
-  max-runs-per-window: 3
-  window: 60
-  events: [issue_comment]
-  ignored-roles: []
-max-daily-ai-credits: 200
-timeout-minutes: 12
 ---
 
 # Issue Triage

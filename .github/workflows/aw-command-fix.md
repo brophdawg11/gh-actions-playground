@@ -1,14 +1,14 @@
 ---
-name: fix
+name: /fix
+emoji: "🤖"
 description: Implement a focused issue fix after an administrator requests it
 on:
   roles: [admin]
-  issue_comment:
-    types: [created]
+  slash_command:
+    name: fix
+    events: [issue_comment]
+  status-comment: false
   skip-bots: [dependabot, renovate, github-actions, copilot]
-if: >-
-  github.event.issue.pull_request == null &&
-  github.event.comment.body == '/fix'
 permissions:
   actions: read
   contents: read

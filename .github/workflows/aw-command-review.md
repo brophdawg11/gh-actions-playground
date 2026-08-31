@@ -1,14 +1,14 @@
 ---
-name: review
+name: /review
+emoji: "🤖"
 description: Perform an admin-requested read-only review of a community pull request
 on:
   roles: [admin]
-  issue_comment:
-    types: [created]
+  slash_command:
+    name: review
+    events: [pull_request_comment]
+  status-comment: false
   skip-bots: [dependabot, renovate, github-actions, copilot]
-if: >-
-  github.event.issue.pull_request != null &&
-  github.event.comment.body == '/review'
 permissions:
   contents: read
   issues: read
