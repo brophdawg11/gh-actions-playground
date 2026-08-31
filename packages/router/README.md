@@ -16,15 +16,15 @@ The demo consumes this package through the pnpm workspace using
 `@gh-actions-playground/router`:
 
 ```tsx
-import { createRoot } from "@remix-run/ui";
-import { Router } from "@gh-actions-playground/router";
+import { createRoot, type Handle } from "@remix-run/ui";
+import { Router, type RouteProps } from "@gh-actions-playground/router";
 
 function Home() {
   return () => <h1>Home</h1>;
 }
 
-function Project() {
-  return () => <h1>Project</h1>;
+function Project(handle: Handle<RouteProps>) {
+  return () => <h1>Project {handle.props.params.projectId}</h1>;
 }
 
 function NotFound() {
@@ -46,6 +46,8 @@ root.render(
 Routes are checked in declaration order, and the first match is rendered. Route
 keys use native [`URLPattern`](https://developer.mozilla.org/en-US/docs/Web/API/URLPattern)
 pathname syntax, including named segments such as `:projectId` and wildcards.
+Matched pathname groups are available to route components through
+`handle.props.params`.
 
 The router uses the
 [Navigation API](https://developer.mozilla.org/en-US/docs/Web/API/Navigation_API)
