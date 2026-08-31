@@ -40,7 +40,6 @@ steps:
   - name: Verify pnpm
     run: pnpm --version
 safe-outputs:
-  staged: true
   add-comment:
     max: 1
     target: triggering

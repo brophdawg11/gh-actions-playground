@@ -31,7 +31,6 @@ tools:
 network:
   allowed: [defaults, github]
 safe-outputs:
-  staged: true
   add-comment:
     max: 1
     target: triggering
