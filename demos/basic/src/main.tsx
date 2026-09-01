@@ -2,6 +2,7 @@ import { createRoot, on, type Handle } from "@remix-run/ui";
 import button from "@remix-run/ui/button";
 import {
   Router,
+  type RouteProps,
   type Routes,
 } from "@gh-actions-playground/router";
 
@@ -39,7 +40,7 @@ function App() {
   );
 }
 
-function Home(handle: Handle) {
+function Home(handle: Handle<RouteProps>) {
   let count = 0;
 
   return () => (
@@ -94,9 +95,9 @@ function Projects() {
   );
 }
 
-function Project() {
+function Project(handle: Handle<RouteProps>) {
   return () => {
-    let projectId = new URL(window.location.href).pathname.split("/").at(-1);
+    let projectId = handle.props.params.projectId;
 
     return (
       <section class="page">

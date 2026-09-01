@@ -4,7 +4,13 @@ import {
   type RemixNode,
 } from "@remix-run/ui";
 
-export type RouteComponent = (handle: Handle) => () => RemixNode;
+export type RouteParams = Record<string, string | undefined>;
+
+export interface RouteProps {
+  params: RouteParams;
+}
+
+export type RouteComponent = (handle: Handle<RouteProps>) => () => RemixNode;
 export type Routes = Record<string, RouteComponent>;
 
 export interface RouterProps {
@@ -66,6 +72,13 @@ export function Router(handle: Handle<RouterProps>) {
     }
 
     let match = compiledRoutes.findLast(({ pattern }) => pattern.test(currentUrl));
-    return match ? createElement(match.component) : null;
+    if (!match) {
+      return null;
+    }
+
+    let result = match.pattern.exec(currentUrl);
+    return result
+      ? createElement(match.component, { params: result.pathname.groups })
+      : null;
   };
 }
