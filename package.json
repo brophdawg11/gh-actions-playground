@@ -6,12 +6,14 @@
   "scripts": {
     "build": "pnpm --recursive --if-present run build",
     "dev": "pnpm --filter @gh-actions-playground/basic-demo run dev",
+    "lint": "oxlint --deny-warnings .",
     "test": "pnpm --recursive --if-present run test",
     "test:install-browser": "playwright install chromium",
     "typecheck": "pnpm --recursive --if-present run typecheck"
   },
   "devDependencies": {
     "@vitest/browser-playwright": "^4.1.11",
+    "oxlint": "^1.80.0",
     "playwright": "^1.62.1",
     "typescript": "^7.0.2",
     "vite": "^8.2.2",
