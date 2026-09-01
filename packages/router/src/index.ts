@@ -71,7 +71,7 @@ export function Router(handle: Handle<RouterProps>) {
       );
     }
 
-    let match = compiledRoutes.findLast(({ pattern }) => pattern.test(currentUrl));
+    let match = compiledRoutes.find(({ pattern }) => pattern.test(currentUrl));
     if (!match) {
       return null;
     }
