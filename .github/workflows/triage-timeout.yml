@@ -1,0 +1,202 @@
+name: Triage Needs-Info Timeout
+
+on:
+  schedule:
+    - cron: "0 8 * * *"
+      timezone: "America/New_York"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Preview actions without changing issues
+        required: true
+        type: boolean
+        default: true
+
+permissions: {}
+
+concurrency:
+  group: triage-needs-info-timeout
+  cancel-in-progress: false
+
+jobs:
+  process:
+    name: Process needs-info issues
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    env:
+      # Keep scheduled runs in preview mode for the initial rollout.
+      ENFORCE_SCHEDULED: "false"
+    steps:
+      - name: Close expired needs-info issues
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const timeoutMs = 7 * 24 * 60 * 60 * 1000;
+            const isDispatch = context.eventName === "workflow_dispatch";
+            const dispatchDryRun = ${{ inputs.dry_run || false }};
+            const dryRun = isDispatch
+              ? dispatchDryRun
+              : process.env.ENFORCE_SCHEDULED !== "true";
+
+            if (isDispatch && !dryRun) {
+              const { data } =
+                await github.rest.repos.getCollaboratorPermissionLevel({
+                  ...context.repo,
+                  username: context.actor,
+                });
+              if (data.permission !== "admin") {
+                core.setFailed(
+                  "Only repository administrators may run live timeout processing.",
+                );
+                return;
+              }
+            }
+
+            const candidates = (
+              await github.paginate(github.rest.issues.listForRepo, {
+                ...context.repo,
+                state: "open",
+                labels: "needs-info",
+                per_page: 100,
+              })
+            )
+              .filter((issue) => !issue.pull_request)
+              .slice(0, 100);
+
+            const actions = [];
+
+            async function readState(issueNumber) {
+              const [issueResponse, timeline, comments] = await Promise.all([
+                github.rest.issues.get({
+                  ...context.repo,
+                  issue_number: issueNumber,
+                }),
+                github.paginate(github.rest.issues.listEventsForTimeline, {
+                  ...context.repo,
+                  issue_number: issueNumber,
+                  per_page: 100,
+                }),
+                github.paginate(github.rest.issues.listComments, {
+                  ...context.repo,
+                  issue_number: issueNumber,
+                  per_page: 100,
+                }),
+              ]);
+
+              const labelEvents = timeline
+                .filter(
+                  (event) =>
+                    event.event === "labeled" &&
+                    event.label?.name === "needs-info",
+                )
+                .sort(
+                  (left, right) =>
+                    Date.parse(right.created_at) - Date.parse(left.created_at),
+                );
+
+              return {
+                issue: issueResponse.data,
+                comments,
+                labeledAt: labelEvents[0]?.created_at,
+              };
+            }
+
+            for (const candidate of candidates) {
+              const initial = await readState(candidate.number);
+              if (!initial.labeledAt) {
+                actions.push({
+                  issue: candidate.number,
+                  action: "skip",
+                  reason: "needs-info label timestamp was not found",
+                });
+                continue;
+              }
+
+              const author = initial.issue.user?.login;
+              const authorReplied = initial.comments.some(
+                (comment) =>
+                  comment.user?.login === author &&
+                  Date.parse(comment.created_at) > Date.parse(initial.labeledAt),
+              );
+
+              if (authorReplied) {
+                actions.push({
+                  issue: candidate.number,
+                  action: dryRun ? "would-remove-label" : "removed-label",
+                  reason: "issue author replied",
+                });
+                if (!dryRun) {
+                  await github.rest.issues.removeLabel({
+                    ...context.repo,
+                    issue_number: candidate.number,
+                    name: "needs-info",
+                  });
+                }
+                continue;
+              }
+
+              if (Date.now() - Date.parse(initial.labeledAt) < timeoutMs) {
+                actions.push({
+                  issue: candidate.number,
+                  action: "skip",
+                  reason: "seven-day response window is still open",
+                });
+                continue;
+              }
+
+              const current = await readState(candidate.number);
+              const stillOpen = current.issue.state === "open";
+              const stillLabeled = current.issue.labels.some(
+                (label) =>
+                  (typeof label === "string" ? label : label.name) ===
+                  "needs-info",
+              );
+              const labelUnchanged = current.labeledAt === initial.labeledAt;
+              const lateReply = current.comments.some(
+                (comment) =>
+                  comment.user?.login === author &&
+                  Date.parse(comment.created_at) >
+                    Date.parse(current.labeledAt),
+              );
+
+              if (!stillOpen || !stillLabeled || !labelUnchanged || lateReply) {
+                actions.push({
+                  issue: candidate.number,
+                  action: "skip",
+                  reason: "issue changed during timeout processing",
+                });
+                continue;
+              }
+
+              actions.push({
+                issue: candidate.number,
+                action: dryRun ? "would-close" : "closed",
+                reason: "no author reply within seven days",
+              });
+              if (!dryRun) {
+                await github.rest.issues.createComment({
+                  ...context.repo,
+                  issue_number: candidate.number,
+                  body:
+                    "Closing because the requested information was not provided " +
+                    "within seven days. If you can provide it later, please open " +
+                    "a new issue with the missing details.",
+                });
+                await github.rest.issues.update({
+                  ...context.repo,
+                  issue_number: candidate.number,
+                  state: "closed",
+                  state_reason: "not_planned",
+                });
+              }
+            }
+
+            await core.summary
+              .addHeading(
+                `Needs-info timeout ${dryRun ? "preview" : "results"}`,
+              )
+              .addCodeBlock(JSON.stringify(actions, null, 2), "json")
+              .write();
